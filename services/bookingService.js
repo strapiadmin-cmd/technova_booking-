@@ -210,7 +210,9 @@ async function getBooking({ requester, id }) {
 }
 
 async function updateBookingLifecycle({ requester, id, status }) {
+  const requesterType = String(requester?.type || '').toLowerCase();
   let booking = await Booking.findById(id);
+  try { require('../utils/logger').info('[lifecycle] start', { id: String(id), requesterType, status, current: booking && booking.status }); } catch (_) {}
   if (!booking) {
     const err = new Error('Booking not found');
     err.status = 404;
@@ -226,7 +228,7 @@ async function updateBookingLifecycle({ requester, id, status }) {
     err.status = 400;
     throw err;
   }
-  if (status === 'accepted' && requester?.type === 'driver') {
+  if (status === 'accepted' && requesterType === 'driver') {
     const driver = await Driver.findById(requester.id);
     if (!driver || !driver.available) {
       const err = new Error('Driver must be available to accept bookings. Driver is currently unavailable.');
@@ -267,14 +269,15 @@ async function updateBookingLifecycle({ requester, id, status }) {
     }
     booking = updated;
     await Driver.findByIdAndUpdate(requester.id, { available: false });
+    try { require('../utils/logger').info('[lifecycle] accepted-atomic', { id: String(booking._id), status: booking.status, driverId: booking.driverId }); } catch (_) {}
   }
-  if (requester?.type === 'driver' && booking.driverId && booking.driverId !== String(requester.id)) {
+  if (requesterType === 'driver' && booking.driverId && booking.driverId !== String(requester.id)) {
     const err = new Error('Only the assigned driver can change this booking status');
     err.status = 403;
     throw err;
   }
   // If accepted via atomic update above, skip redundant mutation
-  if (!(status === 'accepted' && requester?.type === 'driver')) {
+  if (!(status === 'accepted' && requesterType === 'driver')) {
     booking.status = status;
     if (status === 'accepted') booking.acceptedAt = new Date();
   }
@@ -342,10 +345,12 @@ async function updateBookingLifecycle({ requester, id, status }) {
     positionUpdateService.stopTracking(booking._id.toString());
   }
   // For atomic accept we already persisted changes
-  if (!(status === 'accepted' && requester?.type === 'driver')) {
+  if (!(status === 'accepted' && requesterType === 'driver')) {
     await booking.save();
+    try { require('../utils/logger').info('[lifecycle] saved', { id: String(booking._id), status: booking.status }); } catch (_) {}
   }
   await TripHistory.create({ bookingId: booking._id, driverId: booking.driverId, passengerId: booking.passengerId, status: booking.status });
+  try { require('../utils/logger').info('[lifecycle] done', { id: String(booking._id), status: booking.status, driverId: booking.driverId }); } catch (_) {}
   return booking;
 }
 

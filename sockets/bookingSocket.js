@@ -142,7 +142,8 @@ module.exports = (io, socket) => {
       if (!bookingId) return socket.emit('booking_error', { message: 'bookingId is required' });
 
       // Only allow accept transition via lifecycle update in service
-      const updated = await bookingService.updateBookingLifecycle({ requester: socket.user, id: bookingId, status: 'accepted' });
+      const updated = await bookingService.updateBookingLifecycle({ requester: { ...socket.user, type: String(socket.user.type || '').toLowerCase() }, id: bookingId, status: 'accepted' });
+      try { logger.info('[booking_accept] lifecycle updated', { bookingId: String(updated._id), status: updated.status, driverId: updated.driverId }); } catch (_) {}
       const room = `booking:${String(updated._id)}`;
       socket.join(room);
       bookingEvents.emitBookingUpdate(String(updated._id), { status: 'accepted', driverId: String(socket.user.id), acceptedAt: updated.acceptedAt });
