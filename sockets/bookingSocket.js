@@ -153,15 +153,24 @@ module.exports = (io, socket) => {
       try {
         const { Driver } = require('../models/userModels');
         const d = await Driver.findById(String(socket.user.id)).lean();
+        const tokenCarName = socket.user && (socket.user.carName || socket.user.carModel || socket.user.vehicleName || socket.user.carname);
+        const tokenCarPlate = socket.user && (socket.user.carPlate || socket.user.car_plate || socket.user.carPlateNumber || socket.user.plate || socket.user.plateNumber);
+        const tokenCarColor = socket.user && (socket.user.carColor || socket.user.color);
+        const dbCarName = d && (d.carModel || d.carName);
+        const dbCarPlate = d && d.carPlate;
+        const dbCarColor = d && d.carColor;
+        const carNameOut = (dbCarName || tokenCarName) || null;
+        const carPlateOut = (dbCarPlate || tokenCarPlate) || null;
+        const carColorOut = (dbCarColor || tokenCarColor) || null;
         const driverPayload = {
           id: String(socket.user.id),
           name: (d && d.name) || socket.user.name,
           phone: (d && d.phone) || socket.user.phone,
           email: (d && d.email) || socket.user.email,
           vehicleType: (d && d.vehicleType) || socket.user.vehicleType,
-          carName: (d && (d.carModel || d.carName)) || socket.user.carName || socket.user.carModel,
-          carPlate: (d && d.carPlate) || socket.user.carPlate,
-          carColor: (d && d.carColor) || socket.user.carColor,
+          carName: carNameOut,
+          carPlate: carPlateOut,
+          carColor: carColorOut,
           rating: (d && (d.rating || d.rating === 0 ? d.rating : undefined)) ?? 5.0
         };
         const acceptPayload = {
