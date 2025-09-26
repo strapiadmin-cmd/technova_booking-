@@ -136,15 +136,18 @@ module.exports = (io, socket) => {
           id: String(socket.user.id),
           name: (d && d.name) || socket.user.name,
           phone: (d && d.phone) || socket.user.phone,
-          carName: (d && (d.carModel || d.carName)) || socket.user.carName || socket.user.carModel,
+          email: (d && d.email) || socket.user.email,
           vehicleType: (d && d.vehicleType) || socket.user.vehicleType,
-          rating: (d && (d.rating || d.rating === 0 ? d.rating : undefined)) ?? 5.0,
-          carPlate: d && d.carPlate || socket.user.carPlate
+          carName: (d && (d.carModel || d.carName)) || socket.user.carName || socket.user.carModel,
+          carPlate: (d && d.carPlate) || socket.user.carPlate,
+          carColor: (d && d.carColor) || socket.user.carColor,
+          rating: (d && (d.rating || d.rating === 0 ? d.rating : undefined)) ?? 5.0
         };
         const acceptPayload = {
           id: String(updated._id),
           bookingId: String(updated._id),
           status: 'accepted',
+          driverId: String(socket.user.id),
           driver: driverPayload,
           user: { id: String(socket.user.id), type: 'driver' }
         };
