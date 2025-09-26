@@ -3,6 +3,7 @@ const bookingEvents = require('../events/bookingEvents');
 const { sendMessageToSocketId } = require('./utils');
 const lifecycle = require('../services/bookingLifecycleService');
 const { markDispatched, wasDispatched } = require('./dispatchRegistry');
+const { wasEmitted, markEmitted } = require('./emitOnce');
 const logger = require('../utils/logger');
 const { Booking } = require('../models/bookingModels');
 
@@ -172,9 +173,15 @@ module.exports = (io, socket) => {
           user: { id: String(socket.user.id), type: 'driver' }
         };
         try { logger.info('[socket->room] booking_accept', { room, bookingId: acceptPayload.bookingId, driverId: driverPayload.id }); } catch (_) {}
-        io.to(room).emit('booking_accept', acceptPayload);
-        // Also emit alias booking:accept for clients expecting this topic name
-        io.to(room).emit('booking:accept', acceptPayload);
+        if (!wasEmitted('booking_accept', String(updated._id))) {
+          io.to(room).emit('booking_accept', acceptPayload);
+          markEmitted('booking_accept', String(updated._id));
+        }
+        if (!wasEmitted('booking:accept', String(updated._id))) {
+          // Also emit alias booking:accept for clients expecting this topic name
+          io.to(room).emit('booking:accept', acceptPayload);
+          markEmitted('booking:accept', String(updated._id));
+        }
       } catch (_) {}
 
       // Inform nearby drivers to remove
