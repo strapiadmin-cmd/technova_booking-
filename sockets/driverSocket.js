@@ -1,6 +1,7 @@
 const driverService = require('../services/driverService');
 const driverEvents = require('../events/driverEvents');
 const logger = require('../utils/logger');
+const { markDispatched, wasDispatched } = require('./dispatchRegistry');
 
 module.exports = (io, socket) => {
   // On connection, send initial nearby unassigned bookings (pre-existing) and current driver bookings
@@ -86,6 +87,12 @@ try {
         createdAt: x.booking.createdAt,
         updatedAt: x.booking.updatedAt
       }));
+
+    // Mark initial snapshot items as dispatched to avoid immediate duplicate booking:new for same driver
+    try {
+      const driverId = String(me._id);
+      nearby.forEach(b => markDispatched(b.id, driverId));
+    } catch (_) {}
   }
 } catch (_) {}
 

@@ -2,32 +2,11 @@ const bookingService = require('../services/bookingService');
 const bookingEvents = require('../events/bookingEvents');
 const { sendMessageToSocketId } = require('./utils');
 const lifecycle = require('../services/bookingLifecycleService');
+const { markDispatched, wasDispatched } = require('./dispatchRegistry');
 const logger = require('../utils/logger');
 const { Booking } = require('../models/bookingModels');
 
-// Prevent duplicate booking:new dispatches to the same driver for the same booking
-// Key format: `${bookingId}:${driverId}`; values are timestamps for basic TTL cleanup
-const dispatchedBookingToDriver = new Map();
-const DISPATCH_TTL_MS = 5 * 60 * 1000; // 5 minutes
-function markDispatched(bookingId, driverId) {
-  dispatchedBookingToDriver.set(`${bookingId}:${driverId}`, Date.now());
-}
-function wasDispatched(bookingId, driverId) {
-  const ts = dispatchedBookingToDriver.get(`${bookingId}:${driverId}`);
-  if (!ts) return false;
-  if (Date.now() - ts > DISPATCH_TTL_MS) {
-    dispatchedBookingToDriver.delete(`${bookingId}:${driverId}`);
-    return false;
-  }
-  return true;
-}
-function cleanupDispatches() {
-  const now = Date.now();
-  for (const [key, ts] of dispatchedBookingToDriver.entries()) {
-    if (now - ts > DISPATCH_TTL_MS) dispatchedBookingToDriver.delete(key);
-  }
-}
-setInterval(cleanupDispatches, DISPATCH_TTL_MS).unref();
+// Dedup moved to shared registry
 
 module.exports = (io, socket) => {
   // booking_request (create booking)
