@@ -20,13 +20,27 @@ function socketAuth(socket, next) {
       || socket.handshake.headers?.authorization?.replace(/^Bearer\s+/i, '');
     if (!raw) return next();
     const decoded = jwt.verify(raw, process.env.JWT_SECRET || 'secret');
+    // Prefer nested user fields if present, then fall back to top-level claims
+    const src = decoded && decoded.user ? { ...decoded.user, ...decoded } : decoded || {};
+    const name = src.name || src.fullName || src.displayName;
+    const phone = src.phone || src.phoneNumber || src.mobile;
+    const email = src.email;
+    const vehicleType = src.vehicleType;
+    const carName = src.carName || src.carModel || src.vehicleName || src.carname;
+    const carModel = src.carModel || src.carName || src.vehicleName || src.carname;
+    const carPlate = src.carPlate || src.car_plate || src.carPlateNumber || src.plate || src.plateNumber;
+    const carColor = src.carColor || src.color;
     socket.user = {
-      id: decoded.id ? String(decoded.id) : undefined,
-      type: decoded.type,
-      name: decoded.name || decoded.fullName || decoded.displayName,
-      phone: decoded.phone || decoded.phoneNumber || decoded.mobile,
-      email: decoded.email,
-      vehicleType: decoded.vehicleType
+      id: src.id ? String(src.id) : (decoded.id ? String(decoded.id) : undefined),
+      type: src.type || decoded.type,
+      name,
+      phone,
+      email,
+      vehicleType,
+      carName,
+      carModel,
+      carPlate,
+      carColor
     };
     socket.authToken = raw.startsWith('Bearer ') ? raw : `Bearer ${raw}`;
     return next();
