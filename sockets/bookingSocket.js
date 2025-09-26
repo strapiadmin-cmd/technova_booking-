@@ -54,9 +54,21 @@ module.exports = (io, socket) => {
         .filter(x => Number.isFinite(x.distanceKm) && x.distanceKm <= radiusKm)
         .sort((a, b) => a.distanceKm - b.distanceKm);
 
-        // Broadcast to top-N nearest available drivers (no finance filter)
+        // Broadcast to top-N nearest available drivers WITH finance filter
         const maxDrivers = parseInt(process.env.BROADCAST_MAX_DRIVERS || '50', 10);
-        const targetDrivers = withDistance.map(x => x.driver).slice(0, Math.max(1, Math.min(maxDrivers, 200)));
+        const targetFare = booking.fareFinal || booking.fareEstimated || 0;
+        const financeEligibleDrivers = [];
+        for (const item of withDistance) {
+          try {
+            const w = await Wallet.findOne({ userId: String(item.driver._id), role: 'driver' }).lean();
+            const balance = w ? Number(w.balance || 0) : 0;
+            if (financeService.canAcceptBooking(balance, targetFare)) {
+              financeEligibleDrivers.push(item.driver);
+            }
+          } catch (_) {}
+          if (financeEligibleDrivers.length >= 200) break; // soft cap to prevent huge arrays
+        }
+        const targetDrivers = financeEligibleDrivers.slice(0, Math.max(1, Math.min(maxDrivers, 200)));
 
         if (targetDrivers && targetDrivers.length) {
           const bookingDetails = {
