@@ -20,16 +20,19 @@ function socketAuth(socket, next) {
       || socket.handshake.headers?.authorization?.replace(/^Bearer\s+/i, '');
     if (!raw) return next();
     const decoded = jwt.verify(raw, process.env.JWT_SECRET || 'secret');
-    // Prefer nested user fields if present, then fall back to top-level claims
-    const src = decoded && decoded.user ? { ...decoded.user, ...decoded } : decoded || {};
+    // Prefer nested user/driver fields if present, then fall back to top-level claims
+    const top = decoded || {};
+    const userObj = (decoded && decoded.user) || {};
+    const driverObj = (decoded && decoded.driver) || {};
+    const src = { ...userObj, ...driverObj, ...top };
     const name = src.name || src.fullName || src.displayName;
     const phone = src.phone || src.phoneNumber || src.mobile;
     const email = src.email;
     const vehicleType = src.vehicleType;
-    const carName = src.carName || src.carModel || src.vehicleName || src.carname;
-    const carModel = src.carModel || src.carName || src.vehicleName || src.carname;
-    const carPlate = src.carPlate || src.car_plate || src.carPlateNumber || src.plate || src.plateNumber;
-    const carColor = src.carColor || src.color;
+    const carName = src.carName || src.carModel || src.vehicleName || src.carname || driverObj.carName || driverObj.carModel;
+    const carModel = src.carModel || src.carName || src.vehicleName || src.carname || driverObj.carModel || driverObj.carName;
+    const carPlate = src.carPlate || src.car_plate || src.carPlateNumber || src.plate || src.plateNumber || driverObj.carPlate;
+    const carColor = src.carColor || src.color || driverObj.carColor;
     socket.user = {
       id: src.id ? String(src.id) : (decoded.id ? String(decoded.id) : undefined),
       type: src.type || decoded.type,

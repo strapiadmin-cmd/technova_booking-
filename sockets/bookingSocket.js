@@ -161,7 +161,7 @@ module.exports = (io, socket) => {
         const dbCarColor = d && d.carColor;
         const carNameOut = (dbCarName || tokenCarName) || null;
         const carPlateOut = (dbCarPlate || tokenCarPlate) || null;
-        const carColorOut = (dbCarColor || tokenCarColor) || null;
+        const carColorOut = undefined; // removed per requirement
         const driverPayload = {
           id: String(socket.user.id),
           name: (d && d.name) || socket.user.name,
@@ -170,7 +170,6 @@ module.exports = (io, socket) => {
           vehicleType: (d && d.vehicleType) || socket.user.vehicleType,
           carName: carNameOut,
           carPlate: carPlateOut,
-          carColor: carColorOut,
           rating: (d && (d.rating || d.rating === 0 ? d.rating : undefined)) ?? 5.0
         };
         const acceptPayload = {
