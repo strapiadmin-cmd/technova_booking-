@@ -1,9 +1,8 @@
-const logger = require('../utils/logger');
-
 // Shared registry to deduplicate booking:new dispatches to the same driver per booking
 // Key format: `${bookingId}:${driverId}`
 const dispatchedBookingToDriver = new Map();
-const DEFAULT_TTL_MS = 5 * 60 * 1000; // 5 minutes
+// Default TTL extended to 24h to strongly enforce one-time send per driver per booking
+const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000;
 const DISPATCH_TTL_MS = Number.parseInt(process.env.DISPATCH_TTL_MS || `${DEFAULT_TTL_MS}`, 10);
 
 function makeKey(bookingId, driverId) {
@@ -11,8 +10,10 @@ function makeKey(bookingId, driverId) {
 }
 
 function markDispatched(bookingId, driverId) {
-  try { logger.info('[dispatchRegistry] mark', { bookingId: String(bookingId), driverId: String(driverId) }); } catch (_) {}
-  dispatchedBookingToDriver.set(makeKey(bookingId, driverId), Date.now());
+  const key = makeKey(bookingId, driverId);
+  if (!dispatchedBookingToDriver.has(key)) {
+    dispatchedBookingToDriver.set(key, Date.now());
+  }
 }
 
 function wasDispatched(bookingId, driverId) {
