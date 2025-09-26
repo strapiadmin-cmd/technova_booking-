@@ -256,18 +256,8 @@ async function updateBookingLifecycle({ requester, id, status }) {
     // Perform atomic conditional accept to avoid races
     const now = new Date();
     const updated = await Booking.findOneAndUpdate(
-      {
-        _id: id,
-        status: 'requested',
-        $or: [
-          { driverId: { $exists: false } },
-          { driverId: null },
-          { driverId: '' }
-        ]
-      },
-      {
-        $set: { driverId: String(requester.id), status: 'accepted', acceptedAt: now }
-      },
+      { _id: id, status: 'requested' },
+      { $set: { driverId: String(requester.id), status: 'accepted', acceptedAt: now } },
       { new: true }
     );
     if (!updated) {
