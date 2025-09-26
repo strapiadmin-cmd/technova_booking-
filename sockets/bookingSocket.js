@@ -190,7 +190,12 @@ module.exports = (io, socket) => {
         nearby.forEach(d => sendMessageToSocketId(`driver:${String(d._id)}`, { event: 'booking:removed', data: { bookingId: String(updated._id) } }));
         try { logger.info('[socket->drivers] booking:removed broadcast', { bookingId: String(updated._id), count: nearby.length }); } catch (_) {}
       } catch (_) {}
-    } catch (err) {}
+    } catch (err) {
+      try {
+        const safe = (m) => (m && m.message) ? m.message : 'Failed to accept booking';
+        socket.emit('booking_error', { message: safe(err), source: 'booking_accept' });
+      } catch (_) {}
+    }
   });
 
   // booking_cancel

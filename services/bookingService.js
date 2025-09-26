@@ -210,7 +210,7 @@ async function getBooking({ requester, id }) {
 }
 
 async function updateBookingLifecycle({ requester, id, status }) {
-  const booking = await Booking.findById(id);
+  let booking = await Booking.findById(id);
   if (!booking) {
     const err = new Error('Booking not found');
     err.status = 404;
@@ -252,7 +252,30 @@ async function updateBookingLifecycle({ requester, id, status }) {
     } catch (e) {
       if (e && e.status) throw e;
     }
-    booking.driverId = String(requester.id);
+
+    // Perform atomic conditional accept to avoid races
+    const now = new Date();
+    const updated = await Booking.findOneAndUpdate(
+      {
+        _id: id,
+        status: 'requested',
+        $or: [
+          { driverId: { $exists: false } },
+          { driverId: null },
+          { driverId: '' }
+        ]
+      },
+      {
+        $set: { driverId: String(requester.id), status: 'accepted', acceptedAt: now }
+      },
+      { new: true }
+    );
+    if (!updated) {
+      const err = new Error('Booking is no longer available to accept');
+      err.status = 409;
+      throw err;
+    }
+    booking = updated;
     await Driver.findByIdAndUpdate(requester.id, { available: false });
   }
   if (requester?.type === 'driver' && booking.driverId && booking.driverId !== String(requester.id)) {
@@ -260,8 +283,11 @@ async function updateBookingLifecycle({ requester, id, status }) {
     err.status = 403;
     throw err;
   }
-  booking.status = status;
-  if (status === 'accepted') booking.acceptedAt = new Date();
+  // If accepted via atomic update above, skip redundant mutation
+  if (!(status === 'accepted' && requester?.type === 'driver')) {
+    booking.status = status;
+    if (status === 'accepted') booking.acceptedAt = new Date();
+  }
   if (status === 'ongoing') {
     booking.startedAt = new Date();
     if (booking.driverId && booking.passengerId) {
@@ -325,7 +351,10 @@ async function updateBookingLifecycle({ requester, id, status }) {
     if (booking.driverId) await Driver.findByIdAndUpdate(booking.driverId, { available: true });
     positionUpdateService.stopTracking(booking._id.toString());
   }
-  await booking.save();
+  // For atomic accept we already persisted changes
+  if (!(status === 'accepted' && requester?.type === 'driver')) {
+    await booking.save();
+  }
   await TripHistory.create({ bookingId: booking._id, driverId: booking.driverId, passengerId: booking.passengerId, status: booking.status });
   return booking;
 }
