@@ -173,15 +173,13 @@ module.exports = (io, socket) => {
           user: { id: String(socket.user.id), type: 'driver' }
         };
         try { logger.info('[socket->room] booking_accept', { room, bookingId: acceptPayload.bookingId, driverId: driverPayload.id }); } catch (_) {}
-        if (!wasEmitted('booking_accept', String(updated._id))) {
-          io.to(room).emit('booking_accept', acceptPayload);
-          markEmitted('booking_accept', String(updated._id));
-        }
-        if (!wasEmitted('booking:accept', String(updated._id))) {
-          // Also emit alias booking:accept for clients expecting this topic name
-          io.to(room).emit('booking:accept', acceptPayload);
-          markEmitted('booking:accept', String(updated._id));
-        }
+        io.to(room).emit('booking_accept', acceptPayload);
+        // Also emit alias booking:accept for clients expecting this topic name
+        io.to(room).emit('booking:accept', acceptPayload);
+
+        // Additionally notify passenger room directly to avoid missing room join timing
+        try { if (updated.passengerId) io.to(`passenger:${String(updated.passengerId)}`).emit('booking_accept', acceptPayload); } catch (_) {}
+        try { if (updated.passengerId) io.to(`passenger:${String(updated.passengerId)}`).emit('booking:accept', acceptPayload); } catch (_) {}
       } catch (_) {}
 
       // Inform nearby drivers to remove
