@@ -49,7 +49,7 @@ module.exports = (io, socket) => {
       });
       const bookingRoom = `booking:${String(booking._id)}`;
       socket.join(bookingRoom);
-      const createdPayload = { bookingId: String(booking._id) };
+      const createdPayload = { id: String(booking._id), bookingId: String(booking._id) };
       try { logger.info('[socket->passenger] booking:created', { sid: socket.id, userId: socket.user && socket.user.id, bookingId: createdPayload.bookingId }); } catch (_) {}
       socket.emit('booking:created', createdPayload);
 
@@ -111,7 +111,7 @@ module.exports = (io, socket) => {
             dropoff: booking.dropoff,
             passenger: { id: passengerId, name: socket.user.name, phone: socket.user.phone }
           };
-          const payloadForDriver = { bookingId: String(booking._id), booking: bookingDetails, patch, user: { id: passengerId, type: 'passenger' } };
+          const payloadForDriver = { id: String(booking._id), bookingId: String(booking._id), booking: bookingDetails, patch, user: { id: passengerId, type: 'passenger' } };
           const channel = `driver:${String(chosenDriver._id)}`;
           // Deduplicate dispatch per booking-driver
           if (!wasDispatched(String(booking._id), String(chosenDriver._id))) {
@@ -163,6 +163,7 @@ module.exports = (io, socket) => {
           carPlate: d && d.carPlate || socket.user.carPlate
         };
         const acceptPayload = {
+          id: String(updated._id),
           bookingId: String(updated._id),
           status: 'accepted',
           driver: driverPayload,

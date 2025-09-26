@@ -14,6 +14,7 @@ module.exports = (io, socket) => {
       const booking = await Booking.findById(bookingId).lean();
       if (!booking) return socket.emit('booking_error', { message: 'Booking not found', bookingId, source: 'booking:status_request' });
       const out = {
+        id: String(booking._id),
         bookingId: String(booking._id),
         status: booking.status,
         driverId: booking.driverId,

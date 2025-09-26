@@ -9,7 +9,7 @@ function emitBookingCreatedToNearestPassengers(payload, targets) {
 
 function emitBookingUpdate(bookingId, patch) {
   try {
-    broadcast('booking:update', { id: bookingId, ...patch });
+    broadcast('booking:update', { id: bookingId, bookingId, ...patch });
   } catch (_) {}
 }
 
@@ -27,14 +27,14 @@ module.exports = {
 
 function emitTripStarted(io, booking) {
   try {
-    const payload = { bookingId: String(booking._id), startedAt: booking.startedAt, startLocation: booking.startLocation };
+    const payload = { id: String(booking._id), bookingId: String(booking._id), startedAt: booking.startedAt, startLocation: booking.startLocation };
     io.to(`booking:${String(booking._id)}`).emit('trip_started', payload);
   } catch (_) {}
 }
 
 function emitTripOngoing(io, booking, location) {
   try {
-    const payload = { bookingId: String(booking._id || booking), location };
+    const payload = { id: String(booking._id || booking), bookingId: String(booking._id || booking), location };
     io.to(`booking:${String(booking._id || booking)}`).emit('trip_ongoing', payload);
   } catch (_) {}
 }
@@ -42,6 +42,7 @@ function emitTripOngoing(io, booking, location) {
 function emitTripCompleted(io, booking) {
   try {
     const payload = {
+      id: String(booking._id),
       bookingId: String(booking._id),
       amount: booking.fareFinal || booking.fareEstimated,
       distance: booking.distanceKm,
