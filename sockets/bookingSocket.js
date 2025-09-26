@@ -54,20 +54,11 @@ module.exports = (io, socket) => {
         .filter(x => Number.isFinite(x.distanceKm) && x.distanceKm <= radiusKm)
         .sort((a, b) => a.distanceKm - b.distanceKm);
 
-        const targetFare = booking.fareFinal || booking.fareEstimated || 0;
-        let chosenDriver = null;
-        for (const item of withDistance) {
-          try {
-            const w = await Wallet.findOne({ userId: String(item.driver._id), role: 'driver' }).lean();
-            const balance = w ? Number(w.balance || 0) : 0;
-            if (financeService.canAcceptBooking(balance, targetFare)) {
-              chosenDriver = item.driver;
-              break;
-            }
-          } catch (_) {}
-        }
+        // Broadcast to top-N nearest available drivers (no finance filter)
+        const maxDrivers = parseInt(process.env.BROADCAST_MAX_DRIVERS || '50', 10);
+        const targetDrivers = withDistance.map(x => x.driver).slice(0, Math.max(1, Math.min(maxDrivers, 200)));
 
-        if (chosenDriver) {
+        if (targetDrivers && targetDrivers.length) {
           const bookingDetails = {
             id: String(booking._id),
             status: 'requested',
@@ -91,15 +82,17 @@ module.exports = (io, socket) => {
             passenger: { id: passengerId, name: socket.user.name, phone: socket.user.phone }
           };
           const payloadForDriver = { id: String(booking._id), bookingId: String(booking._id), booking: bookingDetails, patch, user: { id: passengerId, type: 'passenger' } };
-          const channel = `driver:${String(chosenDriver._id)}`;
-          // Deduplicate dispatch per booking-driver
-          if (!wasDispatched(String(booking._id), String(chosenDriver._id))) {
-            sendMessageToSocketId(channel, { event: 'booking:new', data: payloadForDriver });
-            markDispatched(String(booking._id), String(chosenDriver._id));
-            try { logger.info('message sent to:  driver:' + String(chosenDriver._id), { bookingId: String(booking._id) }); } catch (_) {}
-          } else {
-            try { logger.info('skipped duplicate booking:new', { bookingId: String(booking._id), driverId: String(chosenDriver._id) }); } catch (_) {}
+          let sentCount = 0;
+          for (const drv of targetDrivers) {
+            const driverId = String(drv._id);
+            const channel = `driver:${driverId}`;
+            if (!wasDispatched(String(booking._id), driverId)) {
+              sendMessageToSocketId(channel, { event: 'booking:new', data: payloadForDriver });
+              markDispatched(String(booking._id), driverId);
+              sentCount++;
+            }
           }
+          try { logger.info('[socket->drivers] booking:new broadcast', { bookingId: String(booking._id), sent: sentCount, considered: targetDrivers.length }); } catch (_) {}
         } else {
           try { logger.info('[socket->drivers] no eligible driver (package/distance)', { bookingId: String(booking._id) }); } catch (_) {}
         }
