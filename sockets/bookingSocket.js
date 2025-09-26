@@ -9,6 +9,21 @@ const { Booking } = require('../models/bookingModels');
 // Dedup moved to shared registry
 
 module.exports = (io, socket) => {
+  // booking:join_room - allow user to join booking room to receive events
+  socket.on('booking:join_room', async (payload) => {
+    try { logger.info('[socket<-user] booking:join_room', { sid: socket.id, userId: socket.user && socket.user.id, payload }); } catch (_) {}
+    try {
+      const data = typeof payload === 'string' ? JSON.parse(payload) : (payload || {});
+      const bookingId = String(data.bookingId || '');
+      if (!bookingId) return socket.emit('booking_error', { message: 'bookingId is required', source: 'booking:join_room' });
+      const room = `booking:${bookingId}`;
+      socket.join(room);
+      try { logger.info('[socket->room] joined', { room, userId: socket.user && socket.user.id }); } catch (_) {}
+      socket.emit('booking:joined', { bookingId });
+    } catch (err) {
+      socket.emit('booking_error', { message: 'Failed to join booking room', source: 'booking:join_room' });
+    }
+  });
   // booking_request (create booking)
   socket.on('booking_request', async (payload) => {
     try { logger.info('[socket<-passenger] booking_request', { sid: socket.id, userId: socket.user && socket.user.id }); } catch (_) {}
@@ -158,6 +173,8 @@ module.exports = (io, socket) => {
         };
         try { logger.info('[socket->room] booking_accept', { room, bookingId: acceptPayload.bookingId, driverId: driverPayload.id }); } catch (_) {}
         io.to(room).emit('booking_accept', acceptPayload);
+        // Also emit alias booking:accept for clients expecting this topic name
+        io.to(room).emit('booking:accept', acceptPayload);
       } catch (_) {}
 
       // Inform nearby drivers to remove
