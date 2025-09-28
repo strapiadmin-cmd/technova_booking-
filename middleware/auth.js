@@ -57,7 +57,15 @@ const authenticate = async (req, res, next) => {
       // HMAC fallback
       decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
     }
-    req.user = decoded; 
+    // Normalize and enrich user claims for downstream usage
+    const top = decoded || {};
+    const nested = (decoded && (decoded.user || decoded.account || decoded.data)) || {};
+    const combined = { ...top, ...nested };
+    const name = combined.name || combined.fullName || combined.displayName;
+    const phone = combined.phone || combined.phoneNumber || combined.mobile;
+    const email = combined.email;
+    const otpRegistered = combined.otpRegistered === true || combined.otp_registered === true || combined.otp === true ? true : undefined;
+    req.user = { ...decoded, name, phone, email, otpRegistered };
     if (process.env.AUTH_DEBUG === '1') {
       console.log('✅ Token valid:', { id: decoded.id, type: decoded.type, exp: new Date(decoded.exp * 1000) });
     }

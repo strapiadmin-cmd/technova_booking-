@@ -24,7 +24,14 @@ function socketAuth(socket, next) {
     const top = decoded || {};
     const userObj = (decoded && decoded.user) || {};
     const driverObj = (decoded && decoded.driver) || {};
-    const src = { ...userObj, ...driverObj, ...top };
+    // Allow passing explicit passenger in handshake.auth or payload to enrich token data
+    const handshakePassenger = socket.handshake.auth?.passenger || socket.handshake.query?.passenger;
+    let passengerObj = {};
+    try {
+      if (typeof handshakePassenger === 'string') passengerObj = JSON.parse(handshakePassenger);
+      else if (handshakePassenger && typeof handshakePassenger === 'object') passengerObj = handshakePassenger;
+    } catch (_) {}
+    const src = { ...userObj, ...driverObj, ...top, ...passengerObj };
     const name = src.name || src.fullName || src.displayName;
     const phone = src.phone || src.phoneNumber || src.mobile;
     const email = src.email;
@@ -33,12 +40,14 @@ function socketAuth(socket, next) {
     const carModel = src.carModel || src.carName || src.vehicleName || src.carname || driverObj.carModel || driverObj.carName;
     const carPlate = src.carPlate || src.car_plate || src.carPlateNumber || src.plate || src.plateNumber || driverObj.carPlate;
     const carColor = src.carColor || src.color || driverObj.carColor;
+    // Include otpRegistered and any provided passenger metadata so features can rely on it
     socket.user = {
       id: src.id ? String(src.id) : (decoded.id ? String(decoded.id) : undefined),
       type: src.type || decoded.type,
       name,
       phone,
       email,
+      otpRegistered: src.otpRegistered === true || src.otp_registered === true || src.otp === true ? true : (typeof src.otpRegistered === 'boolean' ? src.otpRegistered : undefined),
       vehicleType,
       carName,
       carModel,

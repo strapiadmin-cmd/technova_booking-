@@ -135,8 +135,7 @@ module.exports = (io, socket) => {
     try { logger.info('[socket<-driver] booking_accept', { sid: socket.id, userId: socket.user && socket.user.id, payload }); } catch (_) {}
     try {
       const data = typeof payload === 'string' ? JSON.parse(payload) : (payload || {});
-      // Accept either 'bookingId' or 'id' (or Mongo '_id') from clients
-      const bookingId = String(data.bookingId || data.id || data._id || '');
+      const bookingId = String(data.bookingId || '');
       if (!socket.user || String(socket.user.type).toLowerCase() !== 'driver' || !socket.user.id) {
         return socket.emit('booking_error', { message: 'Unauthorized: driver token required', bookingId });
       }
