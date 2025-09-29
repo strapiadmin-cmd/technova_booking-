@@ -183,7 +183,8 @@ This document lists all Socket.IO events in the system, who emits them, required
 
 - Event: `pricing:update`
   - Emitter: Server (HTTP pricing controller)
-  - Payload: Updated pricing model document payload(bookingId)
+  - Payload: `{ bookingId, vehicleType, distanceKm, fareEstimated, fareBreakdown }`
+  - Notes: Emitted after POST `/v1/pricing/recalculate` with `{ bookingId }` to recompute fare using current pickup/dropoff and active pricing.
 
 ---
 
