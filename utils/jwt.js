@@ -15,11 +15,14 @@ function generateUserInfoToken(user, type, roles = [], permissions = []) {
 
 function socketAuth(socket, next) {
   try {
-    const raw = socket.handshake.auth?.token
+    let raw = socket.handshake.auth?.token
       || socket.handshake.query?.token
-      || socket.handshake.headers?.authorization?.replace(/^Bearer\s+/i, '');
+      || socket.handshake.headers?.authorization;
     if (!raw) return next();
-    const decoded = jwt.verify(raw, process.env.JWT_SECRET || 'secret');
+    const token = String(raw)
+      .replace(/^\s+|\s+$/g, '')
+      .replace(/^(Bearer|JWT|Token)\s+/i, '');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
     // Prefer nested user/driver fields if present, then fall back to top-level claims
     const top = decoded || {};
     const userObj = (decoded && decoded.user) || {};
@@ -45,7 +48,7 @@ function socketAuth(socket, next) {
       carPlate,
       carColor
     };
-    socket.authToken = raw.startsWith('Bearer ') ? raw : `Bearer ${raw}`;
+    socket.authToken = `Bearer ${token}`;
     return next();
   } catch (e) {
     return next();
