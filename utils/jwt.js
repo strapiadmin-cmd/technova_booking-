@@ -59,6 +59,8 @@ function socketAuth(socket, next) {
       carName,
       carModel,
       carPlate,
+      // Preserve raw token carPlate (exact key) to allow consumers to prefer it over normalized variants
+      carPlateOriginal: typeof top.carPlate !== 'undefined' ? top.carPlate : undefined,
       carColor
     };
     socket.authToken = raw.startsWith('Bearer ') ? raw : `Bearer ${raw}`;
