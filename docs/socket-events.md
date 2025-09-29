@@ -2,6 +2,10 @@
 
 This document lists all Socket.IO events in the system, who emits them, required auth, expected payloads, and what the server does and broadcasts in response.
 
+See role-based mock examples:
+- Passenger examples: `docs/socket-passenger-examples.md`
+- Driver examples: `docs/socket-driver-examples.md`
+
 ### Conventions
 - Auth: Driver or Passenger JWT is required as noted
 - Rooms: Server joins sockets to logical rooms to scope broadcasts
