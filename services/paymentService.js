@@ -67,16 +67,17 @@ async function setDriverPaymentPreference(driverId, paymentOptionId, options = {
     } catch (_) { /* ignore, will throw not found below */ }
   }
 
-  // Absolute last resort: create a minimal local record so preference can be set
+  // Absolute last resort: upsert minimal local record AND set preference atomically
   if (!updated) {
     const minimalId = String(driverId);
-    await Driver.updateOne(
+    updated = await Driver.findOneAndUpdate(
       { _id: minimalId },
-      { $setOnInsert: { _id: minimalId, externalId: minimalId, rating: 5.0 } },
-      { upsert: true }
-    );
-    updated = await Driver.findByIdAndUpdate(minimalId, { $set: { paymentPreference: opt._id } }, { new: true })
-      .populate({ path: 'paymentPreference', select: { name: 1, logo: 1 } });
+      { 
+        $setOnInsert: { _id: minimalId, externalId: minimalId, rating: 5.0 },
+        $set: { paymentPreference: opt._id }
+      },
+      { new: true, upsert: true }
+    ).populate({ path: 'paymentPreference', select: { name: 1, logo: 1 } });
   }
 
   if (!updated) {
