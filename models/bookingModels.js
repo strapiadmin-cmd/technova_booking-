@@ -91,10 +91,16 @@
       },
       driverId: { type: String }, // From User Service
       passengerId: { type: String }, // From User Service
+      // Optional granular path points during trip (used by live tracking service)
+      locations: [{ lat: Number, lng: Number, timestamp: Date }],
       status: {
         type: String,
         enum: ['requested', 'accepted', 'ongoing', 'completed', 'canceled'],
         required: true,
+      },
+      category: {
+        type: String,
+        enum: ['trip_started','trip_ongoing','trip_completed','lifecycle'],
       },
 
       fare: { type: Number },

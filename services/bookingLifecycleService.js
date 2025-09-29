@@ -25,10 +25,16 @@ async function startTrip(bookingId, startLocation) {
         vehicleType: booking.vehicleType,
         startedAt: booking.startedAt,
         locations: []
+      },
+      $set: {
+        status: 'ongoing',
+        startTime: booking.startedAt
       }
     },
     { upsert: true, new: true }
   );
+  // Append a categorized status entry
+  await TripHistory.create({ bookingId: booking._id, driverId: booking.driverId, passengerId: booking.passengerId, status: 'ongoing', category: 'trip_started' });
   try {
     broadcast('trip_started', {
       bookingId: String(booking._id),
@@ -43,9 +49,11 @@ async function updateTripLocation(bookingId, driverId, location) {
   const point = { lat: Number(location.latitude), lng: Number(location.longitude), timestamp: new Date() };
   await TripHistory.findOneAndUpdate(
     { bookingId },
-    { $push: { locations: point } },
+    { $push: { locations: point }, $set: { status: 'ongoing' } },
     { upsert: true }
   );
+  // Log an ongoing tick status entry
+  try { await TripHistory.create({ bookingId, driverId, status: 'ongoing', category: 'trip_ongoing' }); } catch (_) {}
   return point;
 }
 
@@ -139,6 +147,8 @@ async function completeTrip(bookingId, endLocation, options = {}) {
     },
     { upsert: true }
   );
+  // Add a completed status entry
+  try { await TripHistory.create({ bookingId: booking._id, driverId: booking.driverId, passengerId: booking.passengerId, status: 'completed', category: 'trip_completed' }); } catch (_) {}
 
   // Persist earnings
   try {
