@@ -182,9 +182,12 @@ This document lists all Socket.IO events in the system, who emits them, required
 ### Pricing Domain
 
 - Event: `pricing:update`
-  - Emitter: Server (HTTP pricing controller)
+  - Emitter: Server (pricing service/controller)
   - Payload: `{ bookingId, vehicleType, distanceKm, fareEstimated, fareBreakdown }`
-  - Notes: Emitted after POST `/v1/pricing/recalculate` with `{ bookingId }` to recompute fare using current pickup/dropoff and active pricing.
+  - Usage:
+    - Admin sets base pricing via `POST/PUT /v1/pricing`. No per-booking manual calc.
+    - Driver emits booking context; server recalculates as needed and broadcasts.
+    - To trigger server-side recompute by booking: `POST /v1/pricing/recalculate` with `{ bookingId }`.
 
 ---
 
