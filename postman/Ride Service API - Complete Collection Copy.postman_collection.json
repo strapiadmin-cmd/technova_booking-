@@ -233,9 +233,9 @@
 							"raw": "{\n  \"username\": \"staff_dispatch\",\n  \"password\": \"StaffPass123!\"\n}"
 						},
 						"url": {
-							"raw": "{{baseurl}}/v1/auth/staff/login",
+							"raw": "{{baseUrl}}/v1/auth/staff/login",
 							"host": [
-								"{{baseurl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"v1",
@@ -281,9 +281,9 @@
 							"raw": "{\n  \"username\": \"rootadmin\",\n  \"password\": \"admin123\"\n}"
 						},
 						"url": {
-							"raw": "{{baseurl}}/auth/admin/login",
+							"raw": "{{baseUrl}}/auth/admin/login",
 							"host": [
-								"{{baseurl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"auth",
@@ -328,9 +328,9 @@
 							"raw": "{\n  \"username\": \"staff_user\",\n  \"password\": \"StaffPass123!\"\n}"
 						},
 						"url": {
-							"raw": "{{baseurl}}/v1/auth/staff/login",
+							"raw": "{{baseUrl}}/v1/auth/staff/login",
 							"host": [
-								"{{baseurl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"v1",
@@ -357,9 +357,9 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseurl}}/auth/driver/login",
+							"raw": "{{baseUrl}}/v1/auth/driver/login",
 							"host": [
-								"{{baseurl}}"
+								"{{baseUrl}}"
 							],
 							"path": [
 								"auth",
