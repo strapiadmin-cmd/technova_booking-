@@ -14,10 +14,15 @@ This document lists all Socket.IO events in the system, who emits them, required
 - Event: `booking_request`
   - Emitter: Passenger
   - Auth: Passenger
-  - Payload:
-    - `vehicleType`: string (e.g., "mini")
-    - `pickup`: { latitude, longitude, ... }
-    - `dropoff`: { latitude, longitude, ... }
+  - Payload (emit):
+    {
+      "vehicleType": "mini",
+      "pickup": { "latitude": 9.0308, "longitude": 38.738, "address": "Bole Airport" },
+      "dropoff": { "latitude": 9.0251, "longitude": 38.7461, "address": "Meskel Square" }
+    }
+  - Response (to emitter):
+    Event: `booking:created`
+    Payload: { "id": "<bookingId>", "bookingId": "<bookingId>" }
   - Workflow:
     1) Validate auth and payload
     2) Create booking via `bookingService.createBooking`
@@ -28,7 +33,20 @@ This document lists all Socket.IO events in the system, who emits them, required
 - Event: `booking_accept`
   - Emitter: Driver
   - Auth: Driver
-  - Payload: `{ bookingId }`
+  - Payload (emit): { "bookingId": "<bookingId>" }
+  - Response (room `booking:<bookingId>`):
+    Event: `booking:update` (patch)
+    Payload: { "status": "accepted", "driverId": "<driverId>", "acceptedAt": "<datetime>" }
+    Event: `booking_accept` and alias `booking:accept`
+    Payload:
+    {
+      "id": "<bookingId>",
+      "bookingId": "<bookingId>",
+      "status": "accepted",
+      "driverId": "<driverId>",
+      "driver": { "id": "<driverId>", "name": "John Doe", "phone": "+251900000000", "carName": "Toyota Vitz", "vehicleType": "Sedan", "rating": 4.8, "carPlate": "AB-12345" },
+      "user": { "id": "<driverId>", "type": "driver" }
+    }
   - Workflow:
     1) Update lifecycle via `bookingService.updateBookingLifecycle(..., status:'accepted')`
     2) Join room `booking:{bookingId}`
@@ -38,7 +56,10 @@ This document lists all Socket.IO events in the system, who emits them, required
 - Event: `booking_cancel`
   - Emitter: Driver or Passenger
   - Auth: Driver/Passenger
-  - Payload: `{ bookingId, reason? }`
+  - Payload (emit): { "bookingId": "<bookingId>", "reason": "No show" }
+  - Response (room `booking:<bookingId>`):
+    Event: `booking:update`
+    Payload: { "status": "canceled", "canceledBy": "driver|passenger", "canceledReason": "No show" }
   - Workflow:
     1) Update lifecycle via `bookingService.updateBookingLifecycle(..., status:'canceled')`
     2) Broadcast `booking:update` with { status:'canceled', canceledBy, canceledReason }
@@ -46,7 +67,10 @@ This document lists all Socket.IO events in the system, who emits them, required
 - Event: `booking:status_request`
   - Emitter: Driver or Passenger
   - Auth: Driver/Passenger
-  - Payload: `{ bookingId }`
+  - Payload (emit): { "bookingId": "<bookingId>" }
+  - Response (to emitter):
+    Event: `booking:status`
+    Payload: { "id": "<bookingId>", "bookingId": "<bookingId>", "status": "requested|accepted|ongoing|completed|canceled", "driverId": "<driverId?>", "passengerId": "<passengerId>", "vehicleType": "mini", "pickup": { ... }, "dropoff": { ... } }
   - Workflow:
     1) Load booking document
     2) Emit to requester: `booking:status` with booking status snapshot
@@ -54,7 +78,10 @@ This document lists all Socket.IO events in the system, who emits them, required
 - Event: `booking:ETA_update`
   - Emitter: Driver
   - Auth: Driver
-  - Payload: `{ bookingId, etaMinutes, message? }`
+  - Payload (emit): { "bookingId": "<bookingId>", "etaMinutes": 6, "message": "Traffic" }
+  - Response (room `booking:<bookingId>`):
+    Event: `booking:ETA_update`
+    Payload: { "bookingId": "<bookingId>", "etaMinutes": 6, "message": "Traffic", "driverId": "<driverId>", "timestamp": "<datetime>" }
   - Workflow:
     1) Validate driver is assigned to booking
     2) Emit to room `booking:{bookingId}`: `booking:ETA_update` with ETA info
@@ -73,32 +100,19 @@ This document lists all Socket.IO events in the system, who emits them, required
 
 - Event: `trip_started`
   - Target: Room `booking:{bookingId}`
-  - Payload: `{ bookingId, startedAt, startLocation }`
+  - Payload: { "id": "<bookingId>", "bookingId": "<bookingId>", "startedAt": "<datetime>", "startLocation": { "latitude": 9.03, "longitude": 38.73 } }
 
 - Event: `trip_ongoing`
   - Target: Room `booking:{bookingId}`
-  - Payload: `{ bookingId, location: { latitude, longitude, bearing?, timestamp? } }`
+  - Payload: { "id": "<bookingId>", "bookingId": "<bookingId>", "location": { "latitude": 9.032, "longitude": 38.739, "timestamp": "<datetime>" } }
 
 - Event: `trip_completed`
   - Target: Room `booking:{bookingId}`
-  - Payload: `{ bookingId, amount, distance, waitingTime, completedAt, driverEarnings, commission }`
+  - Payload: { "id": "<bookingId>", "bookingId": "<bookingId>", "amount": 25.5, "distance": 5.2, "waitingTime": 2, "completedAt": "<datetime>", "driverEarnings": 21.675, "commission": 3.825 }
 
 - Event: `booking_accept`
   - Target: Room `booking:{bookingId}`
-  - Payload:
-    {
-      bookingId: "<id>",
-      status: "accepted",
-      driver: {
-        id: "<ObjectId>",
-        name: "John Doe",
-        phone: "+251900000000",
-        carName: "Toyota Vitz",
-        vehicleType: "Sedan",
-        rating: 4.8,
-        carPlate: "AB-12345"
-      }
-    }
+  - Payload: see the `booking_accept` Response above
 
 ---
 
@@ -110,24 +124,13 @@ This document lists all Socket.IO events in the system, who emits them, required
     - Clients should subscribe to `booking:nearby` as soon as the socket connects and also re-subscribe on `connect` events after reconnects.
     - When sent immediately after a (re)connection, the payload includes `init: true` and contains a full snapshot of nearby unassigned bookings and any current bookings assigned to the driver.
     - Realtime incremental updates still arrive via `booking:new` and `booking:removed`; clients should merge these with the latest `booking:nearby` snapshot.
-  - Payload:
+  - Payload (to driver):
     {
-      init: true,
-      driverId: "<ObjectId>",
-      bookings: [
-        {
-          bookingId: "<ObjectId>",
-          status: "requested|accepted|ongoing",
-          pickup: any,
-          dropoff: any,
-          fare: number,
-          passenger: {
-            id: "<ObjectId>",
-            name: string,
-            phone: string
-          }
-        }
-      ]
+      "init": true,
+      "driverId": "<driverId>",
+      "bookings": [ { "id": "<bookingId>", "status": "requested", "pickup": { ... }, "dropoff": { ... }, "fareEstimated": 120, "distanceKm": 1.4, "passenger": { "id": "<pid>", "name": "John Doe", "phone": "+2519..." }, "createdAt": "<datetime>" } ],
+      "currentBookings": [ { "id": "<bookingId>", "status": "accepted", "patch": { "status": "accepted", "passengerId": "<pid>", ... } } ],
+      "user": { "id": "<driverId>", "type": "driver" }
     }
 
   - Target: Room `booking:{bookingId}`
@@ -140,7 +143,10 @@ This document lists all Socket.IO events in the system, who emits them, required
 - Event: `driver:availability`
   - Emitter: Driver
   - Auth: Driver
-  - Payload: `{ available: boolean }`
+  - Payload (emit): { "available": true }
+  - Response (to driver room):
+    Event: `driver:availability`
+    Payload: { "driverId": "<driverId>", "available": true }
   - Workflow:
     1) Update availability via `driverService.setAvailability`
     2) Emit to room `driver:{driverId}`: `driver:availability` { driverId, available }
@@ -148,7 +154,10 @@ This document lists all Socket.IO events in the system, who emits them, required
 - Event: `booking:driver_location_update`
   - Emitter: Driver
   - Auth: Driver
-  - Payload: `{ latitude, longitude, bearing?, bookingId? }`
+  - Payload (emit): { "latitude": 9.031, "longitude": 38.739, "bearing": 45 }
+  - Response (broadcast):
+    Event: `driver:location` and `driver:position`
+    Payload: { "driverId": "<driverId>", "vehicleType": "mini", "available": true, "lastKnownLocation": { "latitude": 9.031, "longitude": 38.739, "bearing": 45 }, "updatedAt": "<datetime>" }
   - Workflow:
     1) Update last known location via `driverService.updateLocation`
     2) Broadcast `driver:location` and `driver:position` with latest coordinates via `driverEvents`
