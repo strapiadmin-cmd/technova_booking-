@@ -18,6 +18,9 @@ exports.list = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     let query = {};
+    const userType = String(req.user?.type || '').toLowerCase();
+    if (userType === 'driver') query.driverId = String(req.user.id);
+    if (userType === 'passenger') query.passengerId = String(req.user.id);
     if (status) query.status = status;
 
     const rows = await TripHistory.find(query)
