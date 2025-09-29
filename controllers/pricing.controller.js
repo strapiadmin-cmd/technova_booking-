@@ -1,4 +1,5 @@
 const { Pricing } = require('../models/pricing');
+const { recalcForBooking } = require('../services/bookingPricingService');
 const { crudController } = require('./basic.crud');
 const { broadcast } = require('../sockets/utils');
 
@@ -16,4 +17,17 @@ async function updateAndBroadcast(req, res) {
 }
 
 module.exports = { ...base, updateAndBroadcast };
+
+// New: Recalculate pricing for a booking and broadcast update with bookingId
+module.exports.recalculateByBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.body || {};
+    if (!bookingId) return res.status(400).json({ message: 'bookingId is required' });
+    const payload = await recalcForBooking(bookingId);
+    broadcast('pricing:update', payload);
+    return res.json(payload);
+  } catch (e) {
+    return res.status(500).json({ message: e.message });
+  }
+};
 
