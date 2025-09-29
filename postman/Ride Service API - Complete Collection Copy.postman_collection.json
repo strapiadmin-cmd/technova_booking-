@@ -107,9 +107,28 @@
                             "code": 200,
                             "_postman_previewlanguage": "json",
                             "body": "{\n  \"bookingId\": \"64f2b8d8e1234567890abcd\",\n  \"status\": \"accepted\",\n  \"driver\": {\n    \"id\": \"64f2a93c8b12ef1234567890\",\n    \"name\": \"John Doe\",\n    \"phone\": \"251900000000\",\n    \"carName\": \"Toyota Vitz\",\n    \"vehicleType\": \"Sedan\",\n    \"rating\": 4.8,\n    \"carPlate\": \"AB-12345\"\n  }\n}"
-                        }
-                    ]
-                },
+				}
+				,
+				{
+					"name": "pricing:update (Server emits payload)",
+					"request": {
+						"method": "GET",
+						"header": [ { "key": "X-Postman-Note", "value": "Documentation of server-emitted payload" } ],
+						"url": { "raw": "socketio://emit/pricing:update" }
+					},
+					"response": [
+						{
+							"name": "Example",
+							"originalRequest": { "method": "GET", "url": "socketio://emit/pricing:update" },
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n  \"bookingId\": \"{{bookingId}}\",\n  \"vehicleType\": \"mini\",\n  \"distanceKm\": 5.3,\n  \"fareEstimated\": 28.6,\n  \"fareBreakdown\": { \"base\": 2.5, \"distanceCost\": 6.36, \"timeCost\": 0, \"waitingCost\": 0, \"surgeMultiplier\": 1 }\n}"
+						}
+					]
+				}
+			]
+		},
                 {
                     "name": "driver:init_bookings (Server emits payload)",
                     "request": {
@@ -2037,6 +2056,38 @@
 							},
 							"response": []
 						},
+						{
+							"name": "Recalculate Pricing by Booking (Broadcast)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{adminToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"bookingId\": \"{{bookingId}}\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/v1/pricing/recalculate",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"pricing",
+										"recalculate"
+									]
+								}
+							},
+							"response": []
+						}
 						{
 							"name": "Update Pricing (Broadcast)",
 							"request": {
