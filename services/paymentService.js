@@ -22,9 +22,11 @@ async function createPaymentOption({ name, logo }) {
 }
 
 async function setDriverPaymentPreference(driverId, paymentOptionId, options = {}) {
+  const logger = require('../utils/logger');
   const opt = await PaymentOption.findById(paymentOptionId).lean();
   if (!opt) {
     const err = new Error('Payment option not found');
+    try { logger.warn('[payment] payment option not found', { paymentOptionId }); } catch (_) {}
     err.status = 404;
     throw err;
   }
@@ -35,6 +37,7 @@ async function setDriverPaymentPreference(driverId, paymentOptionId, options = {
 
   // Fallback: by externalId if internal id did not match
   if (!updated) {
+    try { logger.info('[payment] driver not found by _id, trying externalId', { driverId }); } catch (_) {}
     const existingByExternal = await Driver.findOne({ externalId: String(driverId) }).select({ _id: 1 }).lean();
     if (existingByExternal && existingByExternal._id) {
       updated = await Driver.findByIdAndUpdate(String(existingByExternal._id), { $set: { paymentPreference: opt._id } }, { new: true })
@@ -47,6 +50,7 @@ async function setDriverPaymentPreference(driverId, paymentOptionId, options = {
     try {
       const { getDriverById } = require('../integrations/userServiceClient');
       const authHeader = options && options.headers ? options.headers.Authorization : undefined;
+      try { logger.info('[payment] fetching driver from user-service', { driverId, hasAuth: !!authHeader }); } catch (_) {}
       const ext = await getDriverById(String(driverId), { headers: authHeader ? { Authorization: authHeader } : {} });
       if (ext && ext.id) {
         // Create or update the local driver record using external details
@@ -60,16 +64,22 @@ async function setDriverPaymentPreference(driverId, paymentOptionId, options = {
           lastKnownLocation: ext.lastKnownLocation,
           rating: Number.isFinite(ext.rating) ? ext.rating : 5.0
         };
+        try { logger.info('[payment] upserting driver from user-service', { _id: payload._id, hasPhone: !!payload.phone }); } catch (_) {}
         await Driver.updateOne({ _id: String(ext.id) }, { $set: payload }, { upsert: true });
         updated = await Driver.findByIdAndUpdate(String(ext.id), { $set: { paymentPreference: opt._id } }, { new: true })
           .populate({ path: 'paymentPreference', select: { name: 1, logo: 1 } });
+      } else {
+        try { logger.warn('[payment] user-service did not return driver', { driverId }); } catch (_) {}
       }
-    } catch (_) { /* ignore, will throw not found below */ }
+    } catch (e) {
+      try { logger.error('[payment] user-service fetch failure', e); } catch (_) {}
+    }
   }
 
   // Absolute last resort: upsert minimal local record AND set preference atomically
   if (!updated) {
     const minimalId = String(driverId);
+    try { logger.warn('[payment] creating minimal local driver record', { driverId: minimalId }); } catch (_) {}
     updated = await Driver.findOneAndUpdate(
       { _id: minimalId },
       { 
@@ -82,6 +92,7 @@ async function setDriverPaymentPreference(driverId, paymentOptionId, options = {
 
   if (!updated) {
     const err = new Error('Driver not found');
+    try { logger.error('[payment] failed to set payment preference for driver', { driverId, paymentOptionId }); } catch (_) {}
     err.status = 404;
     throw err;
   }
