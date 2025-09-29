@@ -6,7 +6,15 @@ function generateUserInfoToken(user, type, roles = [], permissions = []) {
     id: user.id || user._id || user._doc?._id,
     type,
     roles,
-    permissions
+    permissions,
+    // Include common vehicle fields for drivers
+    ...(type === 'driver' ? {
+      carPlate: user.carPlate || user.carplate || user.licensePlate || user.plate || user.plateNumber,
+      carName: user.carName || user.carModel,
+      carModel: user.carModel || user.carName,
+      carColor: user.carColor,
+      vehicleType: user.vehicleType,
+    } : {})
   };
   const secret = process.env.JWT_SECRET || 'secret';
   const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
@@ -46,7 +54,6 @@ function socketAuth(socket, next) {
       src.licensePlate || src.license_plate || src.licensePlateNumber ||
       driverObj.carPlate || driverObj.carplate || driverObj.licensePlate || driverObj.plate || driverObj.plateNumber
     );
-    const carColor = src.carColor || src.color || driverObj.carColor;
     // Include otpRegistered and any provided passenger metadata so features can rely on it
     socket.user = {
       id: src.id ? String(src.id) : (decoded.id ? String(decoded.id) : undefined),

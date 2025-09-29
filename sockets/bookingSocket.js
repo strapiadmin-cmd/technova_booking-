@@ -164,6 +164,7 @@ module.exports = (io, socket) => {
         // Prefer token value over DB when available
         const carPlateOut = (tokenCarPlate || dbCarPlate) || null;
         const carColorOut = undefined; // removed per requirement
+        try { logger.info('[booking_accept] driver payload debug', { tokenCarPlate, dbCarPlate, socketUser: socket.user && { id: socket.user.id, carPlate: socket.user.carPlate, carPlateOriginal: socket.user.carPlateOriginal }, dbDriver: d && { id: String(d._id), carPlate: d.carPlate } }); } catch (_) {}
         const driverPayload = {
           id: String(socket.user.id),
           name: (d && d.name) || socket.user.name,
