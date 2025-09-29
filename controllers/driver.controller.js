@@ -242,7 +242,7 @@ module.exports = {
       if (!actingIsDriver && !actingIsAdmin) return res.status(403).json({ message: 'Forbidden: driver or admin required' });
       if (!paymentOptionId) return res.status(400).json({ message: 'paymentOptionId is required' });
       if (!targetDriverId) return res.status(400).json({ message: 'driverId is required for admin to set preference' });
-      const updated = await paymentService.setDriverPaymentPreference(targetDriverId, paymentOptionId);
+      const updated = await paymentService.setDriverPaymentPreference(targetDriverId, paymentOptionId, { headers: req.headers && req.headers.authorization ? { Authorization: req.headers.authorization } : undefined });
       return res.json(updated);
     } catch (e) { errorHandler(res, e); }
   }
