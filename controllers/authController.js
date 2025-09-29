@@ -98,7 +98,7 @@ exports.loginPassenger = async (req, res) => {
 /* ========================= DRIVER ========================= */
 exports.registerDriver = async (req, res) => {
   try {
-    const { name, phone, email, password, vehicleType, carName, paymentPreference } = req.body;
+    const { name, phone, email, password, vehicleType, carName, carModel, carColor, carPlate, paymentPreference } = req.body;
     
     // Validate vehicleType if provided
     if (vehicleType && !['mini', 'sedan', 'van'].includes(vehicleType)) {
@@ -116,12 +116,29 @@ exports.registerDriver = async (req, res) => {
         message: 'Invalid carName. Must be a non-empty string' 
       });
     }
+
+    // Validate optional vehicle fields if provided
+    if (carModel && (typeof carModel !== 'string' || carModel.trim().length === 0)) {
+      return res.status(400).json({ 
+        message: 'Invalid carModel. Must be a non-empty string' 
+      });
+    }
+    if (carColor && (typeof carColor !== 'string' || carColor.trim().length === 0)) {
+      return res.status(400).json({ 
+        message: 'Invalid carColor. Must be a non-empty string' 
+      });
+    }
+    if (carPlate && (typeof carPlate !== 'string' || carPlate.trim().length === 0)) {
+      return res.status(400).json({ 
+        message: 'Invalid carPlate. Must be a non-empty string' 
+      });
+    }
     
     const exists = await models.Driver.findOne({ where: { phone } });
     if (exists) return res.status(409).json({ message: 'Phone already registered' });
 
     const hashed = await hashPassword(password);
-    const driver = await models.Driver.create({ name, phone, email, password: hashed, vehicleType, carName, paymentPreference });
+    const driver = await models.Driver.create({ name, phone, email, password: hashed, vehicleType, carName, carModel, carColor, carPlate, paymentPreference });
 
     const token = sign({
       id: driver.id,
