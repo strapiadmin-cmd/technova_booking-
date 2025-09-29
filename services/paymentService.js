@@ -28,8 +28,17 @@ async function setDriverPaymentPreference(driverId, paymentOptionId) {
     err.status = 404;
     throw err;
   }
-  const updated = await Driver.findByIdAndUpdate(String(driverId), { $set: { paymentPreference: opt._id } }, { new: true })
+  // First try by internal id (our Driver._id is a string id)
+  let updated = await Driver.findByIdAndUpdate(String(driverId), { $set: { paymentPreference: opt._id } }, { new: true })
     .populate({ path: 'paymentPreference', select: { name: 1, logo: 1 } });
+  // If not found, attempt fallback by externalId
+  if (!updated) {
+    const byExternal = await Driver.findOne({ externalId: String(driverId) }).select({ _id: 1 }).lean();
+    if (byExternal && byExternal._id) {
+      updated = await Driver.findByIdAndUpdate(String(byExternal._id), { $set: { paymentPreference: opt._id } }, { new: true })
+        .populate({ path: 'paymentPreference', select: { name: 1, logo: 1 } });
+    }
+  }
   if (!updated) {
     const err = new Error('Driver not found');
     err.status = 404;
