@@ -1,5 +1,6 @@
 const { TripHistory, Booking } = require('../models/bookingModels');
 const { Passenger, Driver } = require('../models/userModels');
+const { Types } = require('mongoose');
 
 function toBasicUser(u) {
   if (!u) return undefined;
@@ -31,10 +32,14 @@ exports.list = async (req, res) => {
     const driverIds = [...new Set(rows.map(r => r.driverId).filter(Boolean))];
     const bookingIds = rows.map(r => r.bookingId).filter(Boolean);
 
+    const validPassengerIds = passengerIds.filter(id => Types.ObjectId.isValid(id));
+    const validDriverIds = driverIds.filter(id => Types.ObjectId.isValid(id));
+    const validBookingIds = bookingIds.filter(id => Types.ObjectId.isValid(id));
+
     const [passengers, drivers, bookings] = await Promise.all([
-      Passenger.find({ _id: { $in: passengerIds } }).select({ _id: 1, name: 1, phone: 1, email: 1 }).lean(),
-      Driver.find({ _id: { $in: driverIds } }).select({ _id: 1, name: 1, phone: 1, email: 1, vehicleType: 1 }).lean(),
-      Booking.find({ _id: { $in: bookingIds } }).select({ _id: 1, pickup: 1, dropoff: 1, vehicleType: 1, passengerName: 1, passengerPhone: 1 }).lean()
+      validPassengerIds.length ? Passenger.find({ _id: { $in: validPassengerIds } }).select({ _id: 1, name: 1, phone: 1, email: 1 }).lean() : Promise.resolve([]),
+      validDriverIds.length ? Driver.find({ _id: { $in: validDriverIds } }).select({ _id: 1, name: 1, phone: 1, email: 1, vehicleType: 1 }).lean() : Promise.resolve([]),
+      validBookingIds.length ? Booking.find({ _id: { $in: validBookingIds } }).select({ _id: 1, pickup: 1, dropoff: 1, vehicleType: 1, passengerName: 1, passengerPhone: 1 }).lean() : Promise.resolve([])
     ]);
 
     const pidMap = Object.fromEntries(passengers.map(p => [String(p._id), p]));
@@ -83,9 +88,9 @@ exports.get = async (req, res) => {
     if (!r) return res.status(404).json({ message: 'Trip not found' });
 
     const [p, d, b] = await Promise.all([
-      r.passengerId ? Passenger.findById(r.passengerId).select({ _id: 1, name: 1, phone: 1, email: 1 }).lean() : null,
-      r.driverId ? Driver.findById(r.driverId).select({ _id: 1, name: 1, phone: 1, email: 1, vehicleType: 1 }).lean() : null,
-      r.bookingId ? Booking.findById(r.bookingId).select({ _id: 1, pickup: 1, dropoff: 1, vehicleType: 1, passengerName: 1, passengerPhone: 1 }).lean() : null
+      (r.passengerId && Types.ObjectId.isValid(r.passengerId)) ? Passenger.findById(r.passengerId).select({ _id: 1, name: 1, phone: 1, email: 1 }).lean() : null,
+      (r.driverId && Types.ObjectId.isValid(r.driverId)) ? Driver.findById(r.driverId).select({ _id: 1, name: 1, phone: 1, email: 1, vehicleType: 1 }).lean() : null,
+      (r.bookingId && Types.ObjectId.isValid(r.bookingId)) ? Booking.findById(r.bookingId).select({ _id: 1, pickup: 1, dropoff: 1, vehicleType: 1, passengerName: 1, passengerPhone: 1 }).lean() : null
     ]);
 
     const data = {
