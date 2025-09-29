@@ -38,7 +38,14 @@ function socketAuth(socket, next) {
     const vehicleType = src.vehicleType;
     const carName = src.carName || src.carModel || src.vehicleName || src.carname || driverObj.carName || driverObj.carModel;
     const carModel = src.carModel || src.carName || src.vehicleName || src.carname || driverObj.carModel || driverObj.carName;
-    const carPlate = src.carPlate || src.car_plate || src.carPlateNumber || src.plate || src.plateNumber || driverObj.carPlate;
+    // Normalize car plate from a wide set of possible claim keys
+    const carPlate = (
+      src.carPlate || src.carplate || src.car_plate ||
+      src.carPlateNumber || src.car_plate_number ||
+      src.plate || src.plateNumber || src.plate_number || src.plateNo || src.plate_no ||
+      src.licensePlate || src.license_plate || src.licensePlateNumber ||
+      driverObj.carPlate || driverObj.carplate || driverObj.licensePlate || driverObj.plate || driverObj.plateNumber
+    );
     const carColor = src.carColor || src.color || driverObj.carColor;
     // Include otpRegistered and any provided passenger metadata so features can rely on it
     socket.user = {

@@ -154,7 +154,12 @@ module.exports = (io, socket) => {
         const { Driver } = require('../models/userModels');
         const d = await Driver.findById(String(socket.user.id)).lean();
         const tokenCarName = socket.user && (socket.user.carName || socket.user.carModel || socket.user.vehicleName || socket.user.carname);
-        const tokenCarPlate = socket.user && (socket.user.carPlate || socket.user.car_plate || socket.user.carPlateNumber || socket.user.plate || socket.user.plateNumber);
+        const tokenCarPlate = socket.user && (
+          socket.user.carPlate || socket.user.carplate || socket.user.car_plate ||
+          socket.user.carPlateNumber || socket.user.car_plate_number ||
+          socket.user.plate || socket.user.plateNumber || socket.user.plate_number || socket.user.plateNo || socket.user.plate_no ||
+          socket.user.licensePlate || socket.user.license_plate || socket.user.licensePlateNumber
+        );
         const tokenCarColor = socket.user && (socket.user.carColor || socket.user.color);
         const dbCarName = d && (d.carModel || d.carName);
         const dbCarPlate = d && d.carPlate;
