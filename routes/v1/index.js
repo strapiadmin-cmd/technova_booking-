@@ -25,7 +25,7 @@ router.use(
   authorize("admin", "staff"),
   require("./assignment.routes")
 );
-router.use("/trips", authorize("admin", "staff"), require("./trip.routes"));
+router.use("/trips", require("./trip.routes"));
 router.use("/live", require("./live.routes"));
 router.use("/pricing", authorize("admin"), require("./pricing.routes"));
 router.use("/admins", authorize("admin"), require("./admin.routes"));

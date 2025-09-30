@@ -25,7 +25,7 @@
 
       vehicleType: {
         type: String,
-        enum: ['mini', 'sedan', 'van'],
+        enum: ['mini', 'sedan', 'van', 'motorbike', 'bajaj'],
         default: 'mini',
       },
       status: {
@@ -100,6 +100,8 @@
       fare: { type: Number },
       distance: { type: Number },
       duration: { type: Number },
+      // Path points collected during trip
+      locations: [{ lat: Number, lng: Number, timestamp: Date }],
 
       pickupLocation: {
         latitude: Number,
@@ -112,6 +114,10 @@
         address: String,
       },
 
+      // Lifecycle timestamps for compatibility with lifecycle service
+      startedAt: { type: Date },
+      completedAt: { type: Date },
+      // Legacy names retained for compatibility with REST trip controller
       startTime: { type: Date },
       endTime: { type: Date },
       dateOfTravel: { type: Date, default: Date.now },
