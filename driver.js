@@ -16,7 +16,7 @@ module.exports = (sequelize, DataTypes) => {
       vehicleRegistrationFile: { type: DataTypes.STRING },
       insuranceFile: { type: DataTypes.STRING },
       carName: { type: DataTypes.STRING },
-      vehicleType: { type: DataTypes.ENUM('mini', 'sedan', 'suv', 'mpv') },
+      vehicleType: { type: DataTypes.ENUM('mini', 'sedan', 'suv', 'mpv', 'motorbike', 'bajaj') },
       carPlate: { type: DataTypes.STRING },
       carModel: { type: DataTypes.STRING },
       carColor: { type: DataTypes.STRING },

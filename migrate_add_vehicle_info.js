@@ -9,7 +9,7 @@ async function migrateVehicleInfo() {
     // Add vehicleType column
     try {
       await sequelize.getQueryInterface().addColumn('drivers', 'vehicle_type', {
-        type: DataTypes.ENUM('mini', 'sedan', 'van'),
+        type: DataTypes.ENUM('mini', 'sedan', 'van', 'suv', 'mpv', 'motorbike', 'bajaj'),
         allowNull: true
       });
       console.log('Added vehicle_type column to drivers table');

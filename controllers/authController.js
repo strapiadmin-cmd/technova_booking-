@@ -101,9 +101,9 @@ exports.registerDriver = async (req, res) => {
     const { name, phone, email, password, vehicleType, carName, paymentPreference } = req.body;
     
     // Validate vehicleType if provided
-    if (vehicleType && !['mini', 'sedan', 'van'].includes(vehicleType)) {
+    if (vehicleType && !['mini', 'sedan', 'van', 'suv', 'mpv', 'motorbike', 'bajaj'].includes(vehicleType)) {
       return res.status(400).json({ 
-        message: 'Invalid vehicleType. Must be one of: mini, sedan, van' 
+        message: 'Invalid vehicleType. Must be one of: mini, sedan, van, suv, mpv, motorbike, bajaj' 
       });
     }
     if (paymentPreference && !Number.isInteger(paymentPreference)) {

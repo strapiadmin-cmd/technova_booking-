@@ -18,9 +18,9 @@ const body = req.body || {};
 const data = { ...body };
 
 // Validate vehicleType if provided
-if (data.vehicleType && !['mini', 'sedan', 'van'].includes(data.vehicleType)) {
+if (data.vehicleType && !['mini', 'sedan', 'van', 'suv', 'mpv', 'motorbike', 'bajaj'].includes(data.vehicleType)) {
   return res.status(400).json({ 
-    message: 'Invalid vehicleType. Must be one of: mini, sedan, van' 
+    message: 'Invalid vehicleType. Must be one of: mini, sedan, van, suv, mpv, motorbike, bajaj' 
   });
 }
 if (data.paymentPreference && !Number.isInteger(data.paymentPreference)) {
@@ -68,9 +68,9 @@ if (req.user.type !== 'driver') return res.status(403).json({ message: 'Only dri
 const data = { ...req.body };
 
 // Validate vehicleType if provided
-if (data.vehicleType && !['mini', 'sedan', 'van'].includes(data.vehicleType)) {
+if (data.vehicleType && !['mini', 'sedan', 'van', 'suv', 'mpv', 'motorbike', 'bajaj'].includes(data.vehicleType)) {
   return res.status(400).json({ 
-    message: 'Invalid vehicleType. Must be one of: mini, sedan, van' 
+    message: 'Invalid vehicleType. Must be one of: mini, sedan, van, suv, mpv, motorbike, bajaj' 
   });
 }
 
