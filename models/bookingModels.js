@@ -25,7 +25,7 @@
 
       vehicleType: {
         type: String,
-        enum: ['mini', 'sedan', 'van'],
+        enum: ['mini', 'sedan', 'van', 'motorbike', 'bajaj'],
         default: 'mini',
       },
       status: {

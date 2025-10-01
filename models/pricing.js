@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const PricingSchema = new mongoose.Schema({
-  vehicleType: { type: String, enum: ['mini', 'sedan', 'van'], default: 'mini', index: true },
+  vehicleType: { type: String, enum: ['mini', 'sedan', 'van', 'motorbike', 'bajaj'], default: 'mini', index: true },
   baseFare: { type: Number, default: 2 },
   perKm: { type: Number, default: 1 },
   perMinute: { type: Number, default: 0.2 },
