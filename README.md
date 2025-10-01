@@ -1,4 +1,4 @@
-# RideShare Backend API
+# User Service API
 
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D14-brightgreen)](https://nodejs.org/)
@@ -22,7 +22,7 @@
 
 ## Project Overview
 
-This is the backend API for the RideShare application, built using Express.js and MySQL (via Sequelize). It handles user management (passengers, drivers, staff, admins), authentication, RBAC, driver document uploads, ratings, and admin operations.
+This is an **External User Service** that handles user authentication, user management, driver management, and related user operations. It's designed to be a standalone microservice that can be integrated with other services like booking systems.
 
 ---
 
@@ -34,8 +34,10 @@ This is the backend API for the RideShare application, built using Express.js an
 - Passenger profile management, including self-delete
 - Driver document uploads and approval workflow (pending/approved/rejected)
 - Passenger and Driver rating flows
-- Driver Wallet model with association
+- Driver management with vehicle type support (mini, sedan, van, motorbike, bajaj)
 - Basic rate limiting on auth endpoints
+- Phone authentication with OTP
+- Dispute management system
 
 ---
 
